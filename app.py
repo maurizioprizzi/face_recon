@@ -4,38 +4,56 @@ import numpy as np
 from flask import Flask, render_template, Response, request, jsonify
 import base64
 import threading
+from queue import Queue
 
 app = Flask(__name__)
 
-# Inicializar a câmera
+# Initialize the camera
 cam = cv2.VideoCapture(0)
 
-# Inicializar o LBPHFaceRecognizer com parâmetros ajustados
+# Initialize the LBPHFaceRecognizer with adjusted parameters
 recognizer = cv2.face.LBPHFaceRecognizer_create(radius=2, neighbors=8, grid_x=8, grid_y=8)
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-# Carregar o modelo treinado (se já existir)
+# Load the trained model (if it exists)
 modelo_path = 'modelo.yml'
 if os.path.exists(modelo_path):
     recognizer.read(modelo_path)
 
-# Função para liberar a câmera quando o app é encerrado
+# Function to release the camera when the app is closed
 def liberar_camera():
     if cam.isOpened():
         cam.release()
 
 @app.route('/')
 def index():
-    """Renderiza a página inicial."""
+    """Renders the initial page."""
     return render_template('index.html')
 
+# Queue for storing recognized student names
+recognized_names = Queue(maxsize=1)
+
 def gen_frames():
-    """Gera frames de vídeo para o feed da webcam."""
+    """Generates video frames for the webcam feed."""
     while True:
         success, frame = cam.read()
         if not success:
             break
         else:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+
+            for (x, y, w, h) in faces:
+                roi_gray = gray[y:y + h, x:x + w]
+                id_aluno, confianca = recognizer.predict(roi_gray)
+
+                if confianca <= 80:  # Confidence threshold
+                    alunos = os.listdir('imagens')
+                    nome_aluno = alunos[id_aluno]
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    cv2.putText(frame, nome_aluno, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                    recognized_names.put(nome_aluno)  # Add recognized name to the queue
+
             ret, buffer = cv2.imencode('.jpg', frame)
             frame = buffer.tobytes()
             yield (b'--frame\r\n'
@@ -43,20 +61,28 @@ def gen_frames():
 
 @app.route('/video_feed')
 def video_feed():
-    """Feed de vídeo para exibição da câmera."""
+    """Video feed for displaying the camera."""
     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/get_recognized_name')
+def get_recognized_name():
+    """Returns the most recently recognized student name (if any)."""
+    if not recognized_names.empty():
+        return jsonify({"status": "sucesso", "aluno": recognized_names.get()})
+    else:
+        return jsonify({"status": "erro", "mensagem": "Nenhum aluno reconhecido."})
 
 @app.route('/salvar_foto', methods=['POST'])
 def salvar_foto():
-    """Salva a foto enviada e realiza o treinamento se necessário."""
+    """Saves the submitted photo and performs training if necessary."""
     data = request.get_json()
     nome = data['nome'].strip()
 
-    # Validar nome do aluno
+    # Validate student name
     if not nome or not nome.isalnum():
         return jsonify({"status": "erro", "mensagem": "Nome do aluno inválido!"})
 
-    # Decodificar a imagem base64
+    # Decode the base64 image
     try:
         imagem_base64 = data['imagem'].split(',')[1]
         img_data = base64.b64decode(imagem_base64)
@@ -65,17 +91,17 @@ def salvar_foto():
     except Exception as e:
         return jsonify({"status": "erro", "mensagem": f"Erro ao processar imagem: {str(e)}"})
 
-    # Detectar rosto
+    # Detect face
     faces_detectadas, erro = detectar_rosto(img)
     if erro:
         return jsonify({"status": "erro", "mensagem": erro})
 
-    # Salvar a imagem e treinar se necessário
+    # Save the image and train if necessary
     status, mensagem = salvar_imagem_e_treinar(faces_detectadas, nome)
     return jsonify({"status": status, "mensagem": mensagem})
 
 def detectar_rosto(img):
-    """Converte imagem para escala de cinza e detecta rostos."""
+    """Converts image to grayscale and detects faces."""
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     if len(faces) == 0:
@@ -83,7 +109,7 @@ def detectar_rosto(img):
     return faces, None
 
 def salvar_imagem_e_treinar(faces, nome):
-    """Salva a imagem e treina o modelo se 10 imagens forem capturadas."""
+    """Saves the image and trains the model if 10 images are captured."""
     aluno_dir = os.path.join("imagens", nome)
     if not os.path.exists(aluno_dir):
         os.makedirs(aluno_dir)
@@ -91,18 +117,18 @@ def salvar_imagem_e_treinar(faces, nome):
     img_count = len([f for f in os.listdir(aluno_dir) if os.path.isfile(os.path.join(aluno_dir, f))])
     img_name = os.path.join(aluno_dir, f"{nome}_{img_count}.jpg")
 
-    # Supondo que a face esteja na posição (x, y, w, h)
+    # Assuming the face is in position (x, y, w, h)
     for (x, y, w, h) in faces:
         face = cv2.resize(cv2.cvtColor(img[y:y+h, x:x+w], cv2.COLOR_BGR2GRAY), (200, 200))
         cv2.imwrite(img_name, face)
 
     if img_count + 1 == 10:
-        threading.Thread(target=treinar_modelo).start()  # Treinar o modelo em background
+        threading.Thread(target=treinar_modelo).start()  # Train the model in the background
         return "sucesso", "Imagem salva com sucesso e modelo em treinamento!"
     return "sucesso", "Imagem salva com sucesso!"
 
 def treinar_modelo():
-    """Treina o modelo LBPH com as imagens salvas."""
+    """Trains the LBPH model with the saved images."""
     faces = []
     ids = []
     alunos = os.listdir('imagens')
@@ -126,7 +152,7 @@ def treinar_modelo():
 
 @app.route('/reconhecer_foto', methods=['POST'])
 def reconhecer_foto():
-    """Reconhece o aluno na imagem enviada."""
+    """Recognizes the student in the submitted image."""
     if not os.path.exists(modelo_path):
         return jsonify({"status": "erro", "mensagem": "O modelo não foi treinado ainda."})
 
@@ -158,4 +184,4 @@ if __name__ == '__main__':
     try:
         app.run(debug=True)
     finally:
-        liberar_camera()  # Liberar a câmera ao encerrar a aplicação
+        liberar_camera()  # Release the camera when the application ends

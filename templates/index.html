@@ -12,7 +12,7 @@
     <h1>Reconhecimento Facial com OpenCV</h1>
 
     <!-- Fase 1: Coleta de Fotos -->
-    <div>
+    <div id="initialInput">
         <label for="numAlunos">Quantos alunos irão tirar fotos? </label>
         <input type="number" id="numAlunos" min="1" placeholder="Número de alunos">
         <button id="iniciarColetaBtn">Iniciar Coleta de Fotos</button>
@@ -34,7 +34,7 @@
         <div id="buttons">
             <button id="capturarBtn" disabled>Tirar Foto</button>
             <p id="feedback">Fotos tiradas: <span id="fotosTiradas">0</span>/10</p>
-            <button id="nextStudentBtn">Próximo Aluno</button>
+            <button id="nextStudentBtn" style="display:none;">Próximo Aluno</button>
             <button id="startRecognitionBtn" style="display:none;">Iniciar Reconhecimento</button>
         </div>
         <audio id="cameraClick" src="static/sounds/camera-click.mp3" preload="auto"></audio>

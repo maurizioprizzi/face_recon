@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const startRecognitionBtn = document.getElementById('startRecognitionBtn');
     const reconhecimentoMsg = document.getElementById('reconhecimentoMsg');
     const errorMessage = document.getElementById('errorMessage');
-    let nomeAluno = document.getElementById('nome');
+    const nomeAlunoInput = document.getElementById('nome');
     let fotosTiradas = 0;
     let modoCaptura = true;
     let currentStudent = 1;
@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
             video.play();
         } catch (err) {
             console.error("Erro ao acessar a webcam:", err);
-            alert("Não foi possível acessar a câmera. Verifique as permissões.");
+            errorMessage.textContent = "Erro ao acessar a câmera. Verifique as permissões.";
         }
     };
 
@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (modoCaptura) {
             ctx.font = '20px Arial';
             ctx.fillStyle = 'white';
-            ctx.fillText(nomeAluno.value, 10, canvas.height - 20);
+            ctx.fillText(nomeAlunoInput.value, 10, canvas.height - 20);
         }
         requestAnimationFrame(desenharVideo);
     };
@@ -45,9 +45,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Verificar se o nome foi inserido
     const verificarNome = () => {
-        if (nomeAluno.value.trim() === '') {
+        const nome = nomeAlunoInput.value.trim();
+        if (nome === '') {
             capturarBtn.disabled = true;
-            errorMessage.textContent = 'Por favor, insira o nome do aluno antes de capturar as fotos.';
+            errorMessage.textContent = 'Por favor, insira o nome do aluno.';
+        } else if (!/^[a-zA-Z\s]+$/.test(nome)) {
+            capturarBtn.disabled = true;
+            errorMessage.textContent = 'O nome do aluno deve conter apenas letras e espaços.';
         } else {
             capturarBtn.disabled = false;
             errorMessage.textContent = '';
@@ -62,8 +66,8 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+        document.getElementById('initialInput').style.display = 'none';
         document.getElementById('fotoSection').style.display = 'block';
-        document.getElementById('iniciarColetaBtn').style.display = 'none';
         modoCaptura = true;
         streamVideo();
         desenharVideo();
@@ -71,11 +75,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Resetar o formulário para o próximo aluno
     const resetarFormulario = () => {
-        nomeAluno.value = '';
+        nomeAlunoInput.value = '';
         fotosTiradas = 0;
-        errorMessage.textContent = '';  // Limpar mensagens de erro
+        errorMessage.textContent = '';
         reconhecimentoMsg.innerHTML = "Reconhecimento não iniciado";
-        capturarBtn.disabled = true;  // Impedir captura até que o nome seja inserido
+        capturarBtn.disabled = true;
         atualizarFeedback();
         nextStudentBtn.style.display = 'none';
         capturarBtn.style.display = 'inline';
@@ -85,14 +89,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const capturarFotoComAtraso = (interval) => {
         return new Promise((resolve) => {
             setTimeout(() => {
-                cameraClick.play();  // Som de clique de câmera
-                const dataURL = canvas.toDataURL('image/jpeg');
+                cameraClick.play();
+                const dataURL = canvas.toDataURL('image/jpeg', 0.8); // Qualidade 80%
                 fetch('/salvar_foto', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ imagem: dataURL, nome: nomeAluno.value })
+                    body: JSON.stringify({ imagem: dataURL, nome: nomeAlunoInput.value })
                 })
                     .then(response => response.json())
                     .then(data => {
@@ -101,7 +105,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     })
                     .catch((error) => {
                         console.error('Erro ao salvar a foto:', error);
-                        resolve();  // Continuar, mesmo se houver erro
+                        resolve();
                     });
             }, interval);
         });
@@ -109,15 +113,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Função para capturar todas as fotos
     const capturarTodasFotos = async () => {
-        capturarBtn.disabled = true;  // Evitar cliques repetidos durante a captura
+        capturarBtn.disabled = true;
         for (let i = fotosTiradas; i < 10; i++) {
-            await capturarFotoComAtraso(500);  // Adiciona um intervalo de 500ms entre cada captura
+            await capturarFotoComAtraso(500);
             fotosTiradas++;
             atualizarFeedback();
         }
 
         if (fotosTiradas === 10) {
-            alert(`Fotos do aluno ${nomeAluno.value} completas!`);
+            alert(`Fotos do aluno ${nomeAlunoInput.value} completas!`);
             capturarBtn.style.display = 'none';
             if (currentStudent < totalAlunos) {
                 nextStudentBtn.style.display = 'inline';
@@ -125,7 +129,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 startRecognitionBtn.style.display = 'inline';
             }
         }
-        capturarBtn.disabled = false;  // Reativar o botão após a captura
+        capturarBtn.disabled = false;
     };
 
     // Capturar todas as fotos ao clicar no botão "Tirar Foto"
@@ -144,10 +148,10 @@ document.addEventListener("DOMContentLoaded", function () {
         modoCaptura = false;
         document.getElementById('fotoSection').style.display = 'none';
         document.getElementById('reconhecimentoSection').style.display = 'block';
-        desenharVideo();  // Continuar desenhando o vídeo no canvas
+        desenharVideo();
 
-        setInterval(() => {
-            const dataURL = canvas.toDataURL('image/jpeg', 0.5);  // Reduzindo a qualidade para 50%
+        const reconhecimentoLoop = setInterval(() => {
+            const dataURL = canvas.toDataURL('image/jpeg', 0.5); // Qualidade 50%
             fetch('/reconhecer_foto', {
                 method: 'POST',
                 headers: {
@@ -158,15 +162,21 @@ document.addEventListener("DOMContentLoaded", function () {
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'sucesso') {
-                        reconhecimentoMsg.innerHTML = `O aluno ${data.aluno} está na frente da câmera`;
+                        reconhecimentoMsg.innerHTML = `O aluno ${data.aluno} está na frente da câmera.`;
                     } else {
-                        reconhecimentoMsg.innerHTML = 'Nenhum aluno reconhecido';
+                        reconhecimentoMsg.innerHTML = 'Nenhum aluno reconhecido.';
                     }
                 })
                 .catch((error) => {
                     console.error('Erro no reconhecimento:', error);
+                    // Handle error gracefully here (e.g., display a message to the user)
                 });
-        }, 3000);  // Intervalo maior de 3 segundos para reduzir a carga no servidor
+        }, 3000); // Intervalo de 3 segundos
+
+        // Clear the recognition loop when the recognition section is hidden
+        document.getElementById('reconhecimentoSection').addEventListener('hidden', () => {
+            clearInterval(reconhecimentoLoop);
+        });
     };
 
     // Botão "Iniciar Reconhecimento"
@@ -176,5 +186,5 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('iniciarColetaBtn').addEventListener('click', iniciarColeta);
 
     // Verificar se o nome foi inserido para habilitar o botão de tirar foto
-    nomeAluno.addEventListener('input', verificarNome);
+    nomeAlunoInput.addEventListener('input', verificarNome);
 });
