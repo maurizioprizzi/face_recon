@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconhecimento Facial</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+    <h1>Reconhecimento Facial com OpenCV</h1>
+
+    <!-- Fase 1: Coleta de Fotos -->
+    <div>
+        <label for="numAlunos">Quantos alunos irão tirar fotos? </label>
+        <input type="number" id="numAlunos" min="1" placeholder="Número de alunos">
+        <button id="iniciarColetaBtn">Iniciar Coleta de Fotos</button>
+    </div>
+
+    <!-- Seção de coleta de fotos, oculta até ser iniciada -->
+    <div style="display:none;" id="fotoSection">
+        <div>
+            <label for="nome">Nome do aluno: </label>
+            <input type="text" id="nome" placeholder="Digite o nome">
+        </div>
+        <p id="errorMessage"></p> <!-- Exibe mensagem de erro aqui -->
+        <div>
+            <label><input type="checkbox" id="oculos"> Está usando óculos?</label>
+        </div>
+        <div>
+            <canvas id="videoCanvas" width="640" height="480"></canvas>
+        </div>
+        <div id="buttons">
+            <button id="capturarBtn" disabled>Tirar Foto</button>
+            <p id="feedback">Fotos tiradas: 0/10</p>
+            <button id="nextStudentBtn">Próximo Aluno</button>
+            <button id="startRecognitionBtn" style="display:none;">Iniciar Reconhecimento</button>
+        </div>
+        <audio id="cameraClick" src="static/sounds/camera-click.mp3" preload="auto"></audio>
+        <p id="reconhecimentoMsg">Reconhecimento não iniciado</p>
+    </div>
+
+    <!-- Seção de reconhecimento, oculta até que a fase de fotos termine -->
+    <div style="display:none;" id="reconhecimentoSection">
+        <h2>Reconhecimento Facial Iniciado</h2>
+        <p>Sente-se em frente à câmera e veja seu rosto ser reconhecido!</p>
+        <p id="reconhecimentoMsg">Nenhum aluno reconhecido ainda.</p>
+    </div>
+
+    <!-- Referência ao arquivo JavaScript externo -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+
+</html>

@@ -1,0 +1,36 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin-top: 20px;
+}
+
+#videoCanvas {
+    border: 2px solid black;
+}
+
+#buttons {
+    margin-top: 10px;
+}
+
+#feedback {
+    margin-top: 10px;
+    font-size: 18px;
+}
+
+#nextStudentBtn,
+#startRecognitionBtn {
+    display: none;
+    margin-top: 10px;
+}
+
+#reconhecimentoMsg {
+    margin-top: 20px;
+    font-size: 20px;
+    color: green;
+}
+
+#errorMessage {
+    color: red;
+    font-size: 16px;
+    margin-top: 10px;
+}

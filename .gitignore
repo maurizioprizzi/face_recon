@@ -1,0 +1,62 @@
+# Ambiente virtual
+venv/
+env/
+ENV/
+.venv/
+.virtualenv/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos de compilação
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+
+# Arquivos de configuração de IDEs
+.idea/
+.vscode/
+*.sublime-workspace
+
+# Logs e arquivos temporários
+*.log
+*.out
+*.pid
+*.swp
+
+# Arquivos de pacotes e dependências
+pip-log.txt
+pip-delete-this-directory.txt
+Pipfile.lock
+
+# Arquivos de configuração do Flask
+instance/
+config.py
+
+# Banco de dados local
+*.sqlite3
+
+# Arquivos de imagens e uploads (se aplicável)
+static/uploads/
+media/
+
+# Testes e cobertura de testes
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Outros arquivos temporários
+*.tmp
+*.temp
