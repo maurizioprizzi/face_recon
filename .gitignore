@@ -45,6 +45,8 @@ config.py
 # Arquivos de imagens e uploads (se aplicável)
 static/uploads/
 media/
+imagens/*
+!imagens/.gitkeep
 
 # Testes e cobertura de testes
 htmlcov/
