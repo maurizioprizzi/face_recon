@@ -22,9 +22,9 @@
     <div style="display:none;" id="fotoSection">
         <div>
             <label for="nome">Nome do aluno: </label>
-            <input type="text" id="nome" placeholder="Digite o nome">
+            <input type="text" id="nome" placeholder="Digite o nome completo">
         </div>
-        <p id="errorMessage"></p> <!-- Exibe mensagem de erro aqui -->
+        <p id="errorMessage" style="color: red;"></p> <!-- Exibe mensagem de erro aqui -->
         <div>
             <label><input type="checkbox" id="oculos"> Está usando óculos?</label>
         </div>
@@ -33,19 +33,20 @@
         </div>
         <div id="buttons">
             <button id="capturarBtn" disabled>Tirar Foto</button>
-            <p id="feedback">Fotos tiradas: 0/10</p>
+            <p id="feedback">Fotos tiradas: <span id="fotosTiradas">0</span>/10</p>
             <button id="nextStudentBtn">Próximo Aluno</button>
             <button id="startRecognitionBtn" style="display:none;">Iniciar Reconhecimento</button>
         </div>
         <audio id="cameraClick" src="static/sounds/camera-click.mp3" preload="auto"></audio>
-        <p id="reconhecimentoMsg">Reconhecimento não iniciado</p>
     </div>
 
     <!-- Seção de reconhecimento, oculta até que a fase de fotos termine -->
     <div style="display:none;" id="reconhecimentoSection">
         <h2>Reconhecimento Facial Iniciado</h2>
         <p>Sente-se em frente à câmera e veja seu rosto ser reconhecido!</p>
-        <p id="reconhecimentoMsg">Nenhum aluno reconhecido ainda.</p>
+        <div id="reconhecimentoMsg">
+            <p style="color: blue;">Nenhum aluno reconhecido ainda.</p>
+        </div>
     </div>
 
     <!-- Referência ao arquivo JavaScript externo -->

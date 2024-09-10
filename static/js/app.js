@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
             video.play();
         } catch (err) {
             console.error("Erro ao acessar a webcam:", err);
+            alert("Não foi possível acessar a câmera. Verifique as permissões.");
         }
     };
 
@@ -46,7 +47,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const verificarNome = () => {
         if (nomeAluno.value.trim() === '') {
             capturarBtn.disabled = true;
-            errorMessage.textContent = 'O aluno não comunicou o próprio nome.';
+            errorMessage.textContent = 'Por favor, insira o nome do aluno antes de capturar as fotos.';
         } else {
             capturarBtn.disabled = false;
             errorMessage.textContent = '';
@@ -72,11 +73,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const resetarFormulario = () => {
         nomeAluno.value = '';
         fotosTiradas = 0;
-        atualizarFeedback();
-        nextStudentBtn.style.display = 'none';  // Esconde o botão "Próximo Aluno"
-        capturarBtn.style.display = 'inline';   // Mostra o botão "Tirar Foto"
+        errorMessage.textContent = '';  // Limpar mensagens de erro
         reconhecimentoMsg.innerHTML = "Reconhecimento não iniciado";
-        verificarNome(); // Verificar o nome sempre que o formulário for resetado
+        capturarBtn.disabled = true;  // Impedir captura até que o nome seja inserido
+        atualizarFeedback();
+        nextStudentBtn.style.display = 'none';
+        capturarBtn.style.display = 'inline';
     };
 
     // Função para capturar foto com atraso
@@ -107,6 +109,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Função para capturar todas as fotos
     const capturarTodasFotos = async () => {
+        capturarBtn.disabled = true;  // Evitar cliques repetidos durante a captura
         for (let i = fotosTiradas; i < 10; i++) {
             await capturarFotoComAtraso(500);  // Adiciona um intervalo de 500ms entre cada captura
             fotosTiradas++;
@@ -122,6 +125,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 startRecognitionBtn.style.display = 'inline';
             }
         }
+        capturarBtn.disabled = false;  // Reativar o botão após a captura
     };
 
     // Capturar todas as fotos ao clicar no botão "Tirar Foto"
@@ -143,7 +147,7 @@ document.addEventListener("DOMContentLoaded", function () {
         desenharVideo();  // Continuar desenhando o vídeo no canvas
 
         setInterval(() => {
-            const dataURL = canvas.toDataURL('image/jpeg');
+            const dataURL = canvas.toDataURL('image/jpeg', 0.5);  // Reduzindo a qualidade para 50%
             fetch('/reconhecer_foto', {
                 method: 'POST',
                 headers: {
@@ -162,7 +166,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 .catch((error) => {
                     console.error('Erro no reconhecimento:', error);
                 });
-        }, 2000);  // Enviar a cada 2 segundos
+        }, 3000);  // Intervalo maior de 3 segundos para reduzir a carga no servidor
     };
 
     // Botão "Iniciar Reconhecimento"
