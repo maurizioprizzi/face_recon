@@ -5,6 +5,9 @@ ENV/
 .venv/
 .virtualenv/
 
+# AI
+modelo.yml
+
 # Arquivos de sistema
 .DS_Store
 Thumbs.db
