@@ -34,7 +34,7 @@ def index():
 recognized_names = Queue(maxsize=1)
 
 def gen_frames():
-    """Generates video frames for the webcam feed."""
+    """Generates video frames with real-time recognition."""
     while True:
         success, frame = cam.read()
         if not success:
@@ -97,7 +97,7 @@ def salvar_foto():
         return jsonify({"status": "erro", "mensagem": erro})
 
     # Save the image and train if necessary
-    status, mensagem = salvar_imagem_e_treinar(faces_detectadas, nome)
+    status, mensagem = salvar_imagem_e_treinar(faces_detectadas, nome, img) # Pass img as parameter
     return jsonify({"status": status, "mensagem": mensagem})
 
 def detectar_rosto(img):
@@ -108,7 +108,7 @@ def detectar_rosto(img):
         return None, "Nenhum rosto detectado!"
     return faces, None
 
-def salvar_imagem_e_treinar(faces, nome):
+def salvar_imagem_e_treinar(faces, nome, img): # Add img as parameter
     """Saves the image and trains the model if 10 images are captured."""
     aluno_dir = os.path.join("imagens", nome)
     if not os.path.exists(aluno_dir):
@@ -138,6 +138,7 @@ def treinar_modelo():
         if os.path.isdir(aluno_path):
             for img_name in os.listdir(aluno_path):
                 img_path = os.path.join(aluno_path, img_name)
+                # Load the image here
                 img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
                 id_aluno = alunos.index(aluno)
                 faces.append(img)
